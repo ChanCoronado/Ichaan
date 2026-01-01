@@ -1,4 +1,4 @@
-//  THEME TOGGLE FUNCTIONALITY
+//  ENHANCED THEME TOGGLE WITH SMOOTH ANIMATIONS
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon = document.querySelector('.theme-icon');
 const body = document.body;
@@ -13,25 +13,32 @@ if (currentTheme === 'light') {
     themeIcon.classList.add('bx-moon');
 }
 
-// Theme toggle event listener
+// Enhanced theme toggle with rotation animation AND canvas redraw
 themeToggle.addEventListener('click', () => {
+    themeToggle.classList.add('rotating');
+    
     body.classList.toggle('light-mode');
     
-    // Update icon
     if (body.classList.contains('light-mode')) {
         themeIcon.classList.remove('bx-sun');
         themeIcon.classList.add('bx-moon');
         localStorage.setItem('theme', 'light');
         updateCanvasColors('light');
+        clearAndRedrawCanvas();  // ✅ Force redraw
     } else {
         themeIcon.classList.remove('bx-moon');
         themeIcon.classList.add('bx-sun');
         localStorage.setItem('theme', 'dark');
         updateCanvasColors('dark');
+        clearAndRedrawCanvas();  // ✅ Force redraw
     }
+    
+    setTimeout(() => {
+        themeToggle.classList.remove('rotating');
+    }, 600);
 });
 
-//  ANIMATED GRID BACKGROUND 
+//  ANIMATED GRID BACKGROUND WITH THEME-AWARE COLORS
 const gridCanvas = document.getElementById('gridCanvas');
 const gridCtx = gridCanvas.getContext('2d');
 
@@ -52,12 +59,25 @@ let gridColor = 'rgba(0, 255, 159, 0.08)';
 
 function updateCanvasColors(theme) {
     if (theme === 'light') {
-        gridColor = 'rgba(18, 139, 68, 0.06)';
-        fallingTextColor = 'rgba(18, 139, 68, 0.08)';
+        // PUP Gold for light mode - MORE VISIBLE
+        gridColor = 'rgba(184, 134, 11, 0.15)';
+        fallingTextColor = 'rgba(184, 134, 11, 0.25)';
+        console.log('✅ Light mode colors set');
     } else {
+        // Green for dark mode
         gridColor = 'rgba(0, 255, 159, 0.08)';
         fallingTextColor = 'rgba(0, 255, 159, 0.15)';
+        console.log('✅ Dark mode colors set');
     }
+}
+
+// ✅ NEW FUNCTION - Clear and force redraw
+function clearAndRedrawCanvas() {
+    gridCtx.clearRect(0, 0, gridWidth, gridHeight);
+    fallingCtx.clearRect(0, 0, fallingWidth, fallingHeight);
+    gridOffset = { x: 0, y: 0 };
+    drawGrid();
+    drawFallingText();
 }
 
 function drawGrid() {
@@ -80,15 +100,17 @@ function drawGrid() {
         gridCtx.stroke();
     }
 
-    gridOffset.x += 0.15;
-    gridOffset.y += 0.15;
+    // Slower movement in light mode for elegance
+    const speed = body.classList.contains('light-mode') ? 0.1 : 0.15;
+    gridOffset.x += speed;
+    gridOffset.y += speed;
 
     gridAnimationFrame = requestAnimationFrame(drawGrid);
 }
 
 drawGrid();
 
-//  FALLING TEXT BACKGROUND 
+//  FALLING TEXT BACKGROUND WITH THEME-AWARE BEHAVIOR
 const fallingCanvas = document.getElementById('fallingTextCanvas');
 const fallingCtx = fallingCanvas.getContext('2d');
 
@@ -129,9 +151,12 @@ for (let i = 0; i < columns; i++) {
 let fallingAnimationFrame;
 
 function drawFallingText() {
-    const bgColor = body.classList.contains('light-mode') 
-        ? 'rgba(255, 255, 255, 0.05)' 
-        : 'rgba(34, 34, 34, 0.05)';
+    const isLightMode = body.classList.contains('light-mode');
+    
+    // FIXED: Stronger fade effect for light mode
+    const bgColor = isLightMode 
+        ? 'rgba(255, 255, 255, 0.08)' 
+        : 'rgba(0, 0, 0, 0.05)';
     
     fallingCtx.fillStyle = bgColor;
     fallingCtx.fillRect(0, 0, fallingWidth, fallingHeight);
@@ -141,15 +166,19 @@ function drawFallingText() {
     drops.forEach((drop, i) => {
         const x = i * 20;
         
-        const baseOpacity = body.classList.contains('light-mode') ? 0.08 : 0.15;
-        const color = body.classList.contains('light-mode') 
-            ? `rgba(18, 139, 68, ${drop.opacity})` 
+        // ✅ MORE VISIBLE opacity for light mode
+        const baseOpacity = isLightMode ? 0.25 : 0.15;
+        
+        const color = isLightMode 
+            ? `rgba(184, 134, 11, ${drop.opacity})` 
             : `rgba(0, 255, 159, ${drop.opacity})`;
         
         fallingCtx.fillStyle = color;
         fallingCtx.fillText(drop.text, x, drop.y);
 
-        drop.y += drop.speed;
+        // Slower speed in light mode
+        const speedMultiplier = isLightMode ? 0.8 : 1;
+        drop.y += drop.speed * speedMultiplier;
 
         if (drop.y > fallingHeight) {
             drop.y = Math.random() * -300;
@@ -343,7 +372,7 @@ function checkSectionOverflow() {
 window.addEventListener('load', checkSectionOverflow);
 window.addEventListener('resize', debounce(checkSectionOverflow, 250));
 
-//  IMPROVED SECTION SWITCHING 
+//  IMPROVED SECTION SWITCHING WITH THEME-AWARE ANIMATIONS
 let isTransitioning = false;
 
 function switchSection(targetSection) {
